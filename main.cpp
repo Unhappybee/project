@@ -131,10 +131,9 @@ int main(int argc, char* argv[]) {
     for (int id : message_ids) {
         std::string fetch_response;
         if (options.headers_only) {
-            std::string command = "A" + std::to_string(client->message_id_counter_++) + " FETCH " + std::to_string(id) + " BODY[HEADER]\r\n";
-            fetch_response = client->send_command(command);
+            fetch_response = client->fetch_message(id, true);
         } else {
-            fetch_response = client->fetch_message(id);
+            fetch_response = client->fetch_message(id, false);
         }
 
         // Save message content to file

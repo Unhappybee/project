@@ -15,13 +15,13 @@ public:
 
     std::string send_command(const std::string& command)override;
     std::string select_mailbox(const std::string& mailbox)override;
-    std::string fetch_message(int message_id)override;
+    std::string fetch_message(int message_id, bool headers)override;
     std::string search_mailbox(const std::string& criteria)override;
-    int message_id_counter_;
     bool logout()override;
     void disconnect()override;
 
 private:
+    int message_id_counter_;
     std::string server_;
     int port_;
     int sockfd_;

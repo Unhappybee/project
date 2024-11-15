@@ -19,12 +19,12 @@ public:
     bool logout()override;
     std::string select_mailbox(const std::string& mailbox)override;
     std::string search_mailbox(const std::string& criteria)override;
-    std::string fetch_message(int message_id)override;
+    std::string fetch_message(int message_id, bool headers)override;
     std::string send_command(const std::string& command)override;
     void disconnect()override;
-    int message_id_counter_;
 
 private:
+    int message_id_counter_;
     std::string receive_response();
     std::string server_;
     int port_;

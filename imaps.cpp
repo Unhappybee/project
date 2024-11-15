@@ -80,8 +80,14 @@ std::string ImapsClient::search_mailbox(const std::string& criteria) {
     return send_command(command);
 }
 
-std::string ImapsClient::fetch_message(int message_id) {
-    std::string command = "A" + std::to_string(message_id_counter_++) + " FETCH " + std::to_string(message_id) + " BODY[]\r\n";
+std::string ImapsClient::fetch_message(int message_id, bool headers) {
+    std::string command;
+    if(headers){
+        command = "A" + std::to_string(message_id_counter_++) + " FETCH " + std::to_string(message_id) + " BODY[HEADER]\r\n";
+    }else{
+        command = "A" + std::to_string(message_id_counter_++) + " FETCH " + std::to_string(message_id) + " BODY[]\r\n";
+    }
+    std::cout << message_id_counter_ << std::endl;//TODO DELETE
     return send_command(command);
 }
 

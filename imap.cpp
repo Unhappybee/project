@@ -70,9 +70,14 @@ std::string ImapClient::select_mailbox(const std::string& mailbox) {
     return send_command(command.str());
 }
 
-std::string ImapClient::fetch_message(int message_id) {
+std::string ImapClient::fetch_message(int message_id, bool headers) {
     std::ostringstream command;
-    command << "A" << message_id_counter_++ << " FETCH " << message_id << " BODY[]\r\n";
+    if(headers){
+        command << "A" << message_id_counter_++ << " FETCH " << message_id << " BODY[HEADER]\r\n";
+    }else{
+        command << "A" << message_id_counter_++ << " FETCH " << message_id << " BODY[]\r\n";
+    }
+    std::cout << message_id_counter_ << std::endl; //TODO DELETE
     return send_command(command.str());
 }
 
