@@ -8,7 +8,7 @@
 #include <cstring>
 
 ImapClient::ImapClient(const std::string& server, int port)
-    : server_(server), port_(port), sockfd_(-1), message_id_counter_(1) {}
+    :message_id_counter_(1), server_(server), port_(port), sockfd_(-1) {}
 
 ImapClient::~ImapClient() {
     if (sockfd_ != -1) {
@@ -41,8 +41,12 @@ bool ImapClient::connect() {
         return false;
     }
 
-    // Receive initial server greeting
-    std::cout << receive_response() << std::endl;
+    std::string server_greeting = receive_response();
+    if (server_greeting.empty() || server_greeting.find("OK") == std::string::npos) {
+        std::cerr << "Error: Invalid server greeting" << std::endl;
+        return false;
+    }
+    
     return true;
 }
 
@@ -78,10 +82,14 @@ std::string ImapClient::search_mailbox(const std::string& criteria) {
     return send_command(command.str());
 }
 
-void ImapClient::logout() {
+bool ImapClient::logout() {
     std::ostringstream command;
     command << "A" << message_id_counter_++ << " LOGOUT\r\n";
-    send_command(command.str());
+    std::string response = send_command(command.str());
+    return response.find("BYE") != std::string::npos && response.find("OK") != std::string::npos;
+}
+
+void ImapClient::disconnect(){
     close(sockfd_);
     sockfd_ = -1;
 }

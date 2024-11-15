@@ -8,7 +8,7 @@
  
 
 ImapsClient::ImapsClient(const std::string& server, int port, const std::string& cert_file, const std::string& cert_dir)
-    : server_(server), port_(port), cert_file_(cert_file), cert_dir_(cert_dir), bio_(nullptr), ctx_(nullptr) {
+    :message_id_counter_(1), server_(server), port_(port), cert_file_(cert_file), cert_dir_(cert_dir), ctx_(nullptr), bio_(nullptr) {
  
     SSL_library_init();
     SSL_load_error_strings();

@@ -5,31 +5,32 @@
 #include <filesystem>
 #include "parseCMD.h"     
 #include <regex>
-#include "imaps.h"       
+#include <variant>
+#include "BaseClient.h"
+#include "imaps.h"
+#include "imap.h"
 
 
 std::string extract_body_from_fetch(const std::string& fetch_response) {
-    // Regex to find the body marker and size: e.g., "{426}\r\n"
+
     std::regex body_marker_regex(R"(\{(\d+)\}\r\n)");
     std::smatch match;
 
-    // Find the body marker in the fetch response
     if (!std::regex_search(fetch_response, match, body_marker_regex)) {
         throw std::runtime_error("Failed to locate body size marker in FETCH response.");
     }
 
-    // Extract the size of the body
+     
     int body_size = std::stoi(match[1]);
 
-    // Find the position of the body marker in the response
+     
     size_t body_start_pos = match.position() + match.length();
 
-    // Ensure the response is large enough to contain the entire body
+    
     if (fetch_response.size() < body_start_pos + body_size) {
         throw std::runtime_error("FETCH response is truncated and does not contain the full body.");
     }
 
-    // Extract the body using the size
     std::string body = fetch_response.substr(body_start_pos, body_size);
 
     return body;
@@ -51,40 +52,41 @@ void save_message(const std::string& content, const std::string& out_dir, int me
 bool folder_exists(const std::string& path) {
     struct stat info;
     if (stat(path.c_str(), &info) != 0) {
-        // Error accessing path
+         
         return false;
     } else if (info.st_mode & S_IFDIR) {
-        // Path exists and is a directory
+         
         return true;
     }
-    // Path exists but is not a directory
+     
     return false;
 }
 
 
 
 int main(int argc, char* argv[]) {
-    // Parse command-line arguments
-     inputParsing::cmd options = inputParsing::parseCMD(argc, argv);
+     
+    inputParsing::cmd options = inputParsing::parseCMD(argc, argv);
 
-   // if (options.imaps){
-        ImapsClient client(options.server, options.port);
-    // }else{
-    //     ImapClient client(options.server, options.port);
-    // }
-
-    if (!client.connect()) {
+    std::unique_ptr<BaseClient> client;
+    if(options.imaps){
+        client = std::make_unique<ImapsClient>(options.server, options.port, options.cert_file, options.cert_addr);
+    }else{
+        client = std::make_unique<ImapClient>(options.server, options.port);
+    }
+    
+    if (!client->connect()) {
         std::cerr << "Failed to connect to server." << std::endl;
         return 1;
     }
 
-    if (!client.login(options.username, options.password)) {
+    if (!client->login(options.username, options.password)) {
         std::cerr << "Failed to log in to the server." << std::endl;
         return 1;
     }
 
     // Select mailbox (e.g., INBOX)
-    std::string select_response = client.select_mailbox(options.box);
+    std::string select_response = client->select_mailbox(options.box);
     if (select_response.find("OK") == std::string::npos) {
         std::cerr << "Failed to select mailbox." << std::endl;
         return 1;
@@ -92,7 +94,7 @@ int main(int argc, char* argv[]) {
 
     // Fetch message IDs based on criteria
     std::string criteria = options.new_only ? "UNSEEN" : "ALL";
-    std::string search_response = client.search_mailbox(criteria);
+    std::string search_response = client->search_mailbox(criteria);
     if (search_response.find("OK") == std::string::npos) {
         std::cerr << "Failed to search mailbox." << std::endl;
         return 1;
@@ -114,11 +116,11 @@ int main(int argc, char* argv[]) {
             message_ids.push_back(message_id);
         }
 
-        temp = ""; // Clear temp for the next iteration
+        temp = ""; 
     }   
 
     for( int id: message_ids){
-        std:: cout << id << std::endl;
+        std:: cout << id << std::endl;//TODO delete
     }
 
     if (!folder_exists(options.out_dir)) {
@@ -129,9 +131,10 @@ int main(int argc, char* argv[]) {
     for (int id : message_ids) {
         std::string fetch_response;
         if (options.headers_only) {
-            fetch_response = client.send_command("FETCH " + std::to_string(id) + " BODY[HEADER]\r\n");
+            std::string command = "A" + std::to_string(client->message_id_counter_++) + " FETCH " + std::to_string(id) + " BODY[HEADER]\r\n";
+            fetch_response = client->send_command(command);
         } else {
-            fetch_response = client.fetch_message(id);
+            fetch_response = client->fetch_message(id);
         }
 
         // Save message content to file
@@ -143,7 +146,8 @@ int main(int argc, char* argv[]) {
     std::cout << "Downloaded " << downloaded_count << " messages." << std::endl;
 
     // Log out and close the connection
-    client.logout();
+    client->logout();
+    client->disconnect();
 
     return 0;
 }

@@ -1,13 +1,13 @@
 # Compiler and flags
 CXX = g++
-CXXFLAGS = -Wall -std=c++11
+CXXFLAGS = -Wall -std=c++17
 LDFLAGS = -lssl -lcrypto
 
 # Targets and sources
 TARGET = imapcl
-SRC = hello.cpp parseCMD.cpp imap.cpp imaps.cpp
+SRC = main.cpp parseCMD.cpp imap.cpp imaps.cpp
 OBJ = $(SRC:.cpp=.o)
-DEPS = parseCMD.h imap.h imaps.h
+DEPS = parseCMD.h imap.h imaps.h BaseClient.h
 
 # Default target: build everything
 all: $(TARGET)
